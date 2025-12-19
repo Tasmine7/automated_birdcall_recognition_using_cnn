@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>EchoFeather</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+    <!-- SPLASH SCREEN (shows first, then fades out) -->
+    <div id="splashScreen" class="splash" role="dialog" aria-hidden="false">
+        <div class="splash-content">
+            <h1 class="splash-title">EchoFeather</h1>
+            <p class="splash-tagline">When species fade, their stories shouldn't.</p>
+        </div>
+    </div>
+
+    <div class="page" id="mainPage" aria-hidden="true">
+        <!-- Top navbar -->
+        <header class="navbar">
+            <div class="navbar-left">
+                <div class="logo-dot">🕊️</div>
+                <div class="brand">
+                    <span class="brand-name">EchoFeather</span>
+                    <span class="brand-sub">When species fade, their stories shouldn't.</span>
+                </div>
+            </div>
+            <div class="navbar-right">
+                <span class="pill">5-class model</span>
+            </div>
+        </header>
+
+        <main class="main">
+            <section class="card hero">
+                <div class="hero-text">
+                    <h1>Classify bird species from audio</h1>
+                    <p>
+                        Upload a short bird call, and the model will predict the
+                        species, generate a Mel spectrogram, and show you the
+                        bird’s picture.
+                    </p>
+
+                    <form
+                        id="uploadForm"
+                        method="POST"
+                        enctype="multipart/form-data"
+                        class="upload-form"
+                    >
+                        <label for="audio_file" class="file-label">
+                            <span id="fileLabelText">Choose audio file (.mp3/.wav)</span>
+                            <input
+                                type="file"
+                                id="audio_file"
+                                name="audio_file"
+                                accept=".wav,.mp3,audio/wav,audio/mp3,audio/mpeg"
+                                required
+                            />
+                        </label>
+
+                        <button type="submit" class="btn" id="predictBtn">
+                            <span class="btn-text">Analyze audio</span>
+                        </button>
+                    </form>
+
+                    <div class="hint">
+                        Tip: Use clean bird calls of a few seconds for best results.
+                    </div>
+
+                    <div
+                        class="audio-preview"
+                        id="audioPreview"
+                        style="display: none;"
+                    >
+                        <h3>Selected audio</h3>
+                        <audio id="audioPlayer" controls></audio>
+                    </div>
+                </div>
+
+                <div class="hero-side">
+                    <div class="summary-card">
+                        <h3>Current prediction</h3>
+
+                        {% if prediction %}
+                        <p class="pred-label">{{ prediction }}</p>
+                        <p class="confidence">
+                            Confidence:
+                            <span>{{ confidence }}%</span>
+                        </p>
+
+                        {% if audio_filename %}
+                        <p class="meta">
+                            File:
+                            <span>{{ audio_filename }}</span>
+                        </p>
+                        {% endif %}
+
+                        {% else %}
+                        <p class="placeholder">
+                            Upload an audio file to see prediction here.
+                        </p>
+                        {% endif %}
+                    </div>
+
+                    {% if prediction %}
+                    <div class="confidence-bar-wrap">
+                        <div class="confidence-bar-track">
+                            <div
+                                class="confidence-bar-fill"
+                                style="width: {{ confidence }}%;"
+                            ></div>
+                        </div>
+                        <div class="confidence-bar-label">
+                            Model confidence
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            {% if prediction %}
+            <section class="card results" aria-live="polite">
+                <h2>Results</h2>
+                <div class="results-grid">
+                    <div class="result-item">
+                        <h3>Mel Spectrogram</h3>
+                        {% if spectrogram_url %}
+                        <img
+                            src="{{ spectrogram_url }}"
+                            alt="Mel Spectrogram"
+                            class="spectrogram-img"
+                        />
+                        {% else %}
+                        <p>No spectrogram generated.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="result-item">
+                        <h3>Bird Image</h3>
+                        {% if bird_image_url %}
+                        <img
+                            src="{{ bird_image_url }}"
+                            alt="Bird image"
+                            class="bird-img"
+                        />
+                        {% else %}
+                        <p>No image available for this species.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="result-item info-card">
+                        <h3>About this Bird</h3>
+                        {% if bird_info %}
+                            <p class="bird-info-text">{{ bird_info }}</p>
+                        {% else %}
+                            <p>No details available.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+        </main>
+
+        <!-- Loading overlay -->
+        <div id="loadingOverlay" class="loading-overlay hidden" aria-hidden="true">
+            <div class="loading-box" role="status" aria-live="assertive">
+                <div class="spinner" aria-hidden="true"></div>
+                <div class="loading-text">Analyzing audio…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App scripts -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+    <!-- Splash control (fallback if your script.js doesn't have it) -->
+    <script>
+        // show splash on load and hide after timeout, then reveal main page
+        window.addEventListener("load", () => {
+            const splash = document.getElementById("splashScreen");
+            const mainPage = document.getElementById("mainPage");
+
+            // If backend redirected after analyze (no_splash=1), skip splash
+            const params = new URLSearchParams(window.location.search);
+            const skipSplash = params.get("no_splash") === "1";
+
+            if (skipSplash) {
+                if (splash) splash.classList.add("hide");
+                if (mainPage) mainPage.setAttribute("aria-hidden", "false");
+                // remove splash after transition if wanted
+                if (splash) {
+                    splash.addEventListener("transitionend", () => {
+                        try { splash.remove(); } catch (e) {}
+                    }, { once: true });
+                }
+                return;
+            }
+
+            // Keep splash visible briefly, then fade out (2s)
+            setTimeout(() => {
+                if (splash) splash.classList.add("hide");
+                if (mainPage) mainPage.setAttribute("aria-hidden", "false");
+            }, 2000);
+
+            // remove splash from DOM after transition to free up space
+            if (splash) {
+                splash.addEventListener("transitionend", () => {
+                    try { splash.remove(); } catch (e) {}
+                }, { once: true });
+            }
+        });
+    </script>
+</body>
+</html>
