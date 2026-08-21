@@ -22,18 +22,31 @@ Matplotlib
 The project follows the following pipeline:
 
 Bird Call Audio
+
       ↓
+      
 Audio Preprocessing
+
       ↓
+      
 Feature Extraction
+
       ↓
+      
 Mel-Spectrogram / MFCC
+
       ↓
+      
 CNN Model
+
       ↓
+      
 Training & Validation
+
       ↓
+      
 Bird Species Classification
+
 1. Audio Preprocessing
 
 The input bird-call recordings are processed using Python audio-processing libraries to prepare them for feature extraction and model training.
@@ -51,4 +64,26 @@ The extracted representations are provided to a Convolutional Neural Network (CN
 4. Model Evaluation
 
 The trained model is evaluated using the validation/test data to assess its ability to correctly classify unseen bird-call samples.
+
+
+OUTPUT
+
+<img width="805" height="456" alt="image" src="https://github.com/user-attachments/assets/8dfec909-39b2-463c-8fbe-dd6a7ec82689" />
+Figure 7.1: EchoFeather Splash Screen (Application Launch Interface)
+
+
+
+<img width="921" height="422" alt="image" src="https://github.com/user-attachments/assets/fae45241-8d92-4a10-910f-198be126d179" />
+Figure 7.2: Home Page – Bird Species Classification Interface
+
+
+
+<img width="975" height="507" alt="image" src="https://github.com/user-attachments/assets/b9ca1dc3-202b-4628-9871-b0751520a3c6" />
+Figure 7.3: Audio Preview and Waveform Visualization
+
+
+
+<img width="926" height="428" alt="image" src="https://github.com/user-attachments/assets/ac6b2e39-31e9-4c13-8d3a-502cdcb82ff5" />
+Figure 4: Birdcall Classification Result Dashboard
+
 
